@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - beta
   workflow_dispatch:
     inputs:
       version:
