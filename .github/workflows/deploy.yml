@@ -1,0 +1,113 @@
+name: Deploy ExamSplitter
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: ''
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Extract version from commit message
+      id: extract_version
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $version = "${{ github.event.inputs.version }}"
+          if ([string]::IsNullOrEmpty($version)) {
+            echo "Error: Version is required for manual workflow dispatch"
+            exit 1
+          }
+        } else {
+          $commitMessage = "${{ github.event.head_commit.message }}"
+          if ($commitMessage -match "deploy\(([^)]+)\)") {
+            $version = $matches[1]
+          } else {
+            echo "No deploy pattern found in commit message: $commitMessage"
+            echo "Expected format: deploy(version): description"
+            exit 1
+          }
+        }
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "Building version: $version"
+        echo "branch=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+        
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --onefile --name ExamSplitter --add-data "models;models" --add-data "banner.png;." --icon "banner.png" --hidden-import ultralytics --hidden-import cv2 --hidden-import fitz --hidden-import PIL --hidden-import reportlab --hidden-import numpy --hidden-import tkinter --exclude-module matplotlib --exclude-module scipy --exclude-module pandas --exclude-module jupyter --exclude-module IPython --exclude-module notebook --exclude-module ipykernel --exclude-module tornado --exclude-module zmq --exclude-module pyzmq --exclude-module jinja2 --exclude-module markupsafe --exclude-module nbformat --exclude-module nbconvert --exclude-module pygments --exclude-module mistune --exclude-module defusedxml --exclude-module bleach --exclude-module entrypoints --exclude-module webencodings --exclude-module html5lib --exclude-module six --exclude-module packaging --exclude-module pyparsing --exclude-module setuptools --exclude-module wheel --exclude-module pip --exclude-module pkg_resources --exclude-module pkg_resources._vendor --exclude-module pkg_resources._vendor.packaging --exclude-module pkg_resources._vendor.pyparsing --exclude-module pkg_resources._vendor.six --exclude-module pkg_resources._vendor.html5lib --exclude-module pkg_resources._vendor.bleach --exclude-module pkg_resources._vendor.defusedxml --exclude-module pkg_resources._vendor.entrypoints --exclude-module pkg_resources._vendor.webencodings --exclude-module pkg_resources._vendor.mistune --exclude-module pkg_resources._vendor.nbformat --exclude-module pkg_resources._vendor.nbconvert --exclude-module pkg_resources._vendor.pygments --exclude-module pkg_resources._vendor.jinja2 --exclude-module pkg_resources._vendor.markupsafe --exclude-module pkg_resources._vendor.tornado --exclude-module pkg_resources._vendor.zmq --exclude-module pkg_resources._vendor.pyzmq --exclude-module pkg_resources._vendor.notebook --exclude-module pkg_resources._vendor.ipykernel --exclude-module pkg_resources._vendor.IPython --exclude-module pkg_resources._vendor.jupyter --exclude-module pkg_resources._vendor.pandas --exclude-module pkg_resources._vendor.scipy --exclude-module pkg_resources._vendor.matplotlib --clean main.py
+          
+    - name: Create release package
+      run: |
+        $version = "${{ steps.extract_version.outputs.version }}"
+        mkdir "ExamSplitter-v$version"
+        copy dist\ExamSplitter.exe "ExamSplitter-v$version\"
+        copy README.md "ExamSplitter-v$version\"
+        copy LICENSE "ExamSplitter-v$version\"
+        if (Test-Path "models") {
+          Copy-Item -Path "models" -Destination "ExamSplitter-v$version\models" -Recurse -Force
+          echo "Models folder copied successfully"
+        } else {
+          echo "Warning: models folder not found"
+        }
+        echo "Creating ZIP file..."
+        Compress-Archive -Path "ExamSplitter-v$version\*" -DestinationPath "ExamSplitter-v$version.zip" -Force
+        echo "ZIP file created: ExamSplitter-v$version.zip"
+        echo "Contents of ZIP:"
+        Get-ChildItem "ExamSplitter-v$version" -Recurse | ForEach-Object { echo "  $($_.FullName)" }
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.extract_version.outputs.version }}
+        name: ExamSplitter v${{ steps.extract_version.outputs.version }}
+        body: |
+          ## ExamSplitter v${{ steps.extract_version.outputs.version }}
+          
+          ### 다운로드
+          - **Windows**: `ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip`
+          
+          ### 설치 방법
+          1. zip 파일을 다운로드하고 압축 해제
+          2. `ExamSplitter.exe` 더블클릭으로 실행
+          
+          ### 주요 기능
+          - PDF 시험지 문제 자동 감지 (YOLOv8)
+          - 다양한 출력 형식 지원
+          - 직관적인 GUI 인터페이스
+          - 실시간 박스 편집 기능
+          
+          ### 시스템 요구사항
+          - Windows 10/11 (64bit)
+          - 최소 4GB RAM
+          - 500MB 이상의 디스크 공간
+          
+          ### 변경사항
+          자세한 변경사항은 [커밋 히스토리](https://github.com/${{ github.repository }}/commits)를 확인하세요.
+        files: ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+ 
