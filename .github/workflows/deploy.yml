@@ -10,13 +10,7 @@ on:
       version:
         description: 'Release version'
         required: true
-        default: '1.0.0'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version'
-        required: true
-        default: '1.0.0'
+        default: ''
 
 jobs:
   build-and-deploy:
@@ -27,7 +21,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
         
@@ -42,12 +36,17 @@ jobs:
       run: |
         if ("${{ github.event_name }}" -eq "workflow_dispatch") {
           $version = "${{ github.event.inputs.version }}"
+          if ([string]::IsNullOrEmpty($version)) {
+            echo "Error: Version is required for manual workflow dispatch"
+            exit 1
+          }
         } else {
           $commitMessage = "${{ github.event.head_commit.message }}"
           if ($commitMessage -match "deploy\(([^)]+)\)") {
             $version = $matches[1]
           } else {
             echo "No deploy pattern found in commit message: $commitMessage"
+            echo "Expected format: deploy(version): description"
             exit 1
           }
         }
@@ -57,19 +56,7 @@ jobs:
         
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --windowed --name ExamSplitter ^
-          --add-data "models;models" ^
-          --add-data "banner.png;." ^
-          --icon "banner.png" ^
-          --hidden-import ultralytics ^
-          --hidden-import cv2 ^
-          --hidden-import fitz ^
-          --hidden-import PIL ^
-          --hidden-import reportlab ^
-          --hidden-import numpy ^
-          --hidden-import tkinter ^
-          --clean ^
-          main.py
+        pyinstaller --onefile --windowed --name ExamSplitter --add-data "models;models" --add-data "banner.png;." --icon "banner.png" --hidden-import ultralytics --hidden-import cv2 --hidden-import fitz --hidden-import PIL --hidden-import reportlab --hidden-import numpy --hidden-import tkinter --clean main.py
           
     - name: Create release package
       run: |
@@ -118,14 +105,14 @@ jobs:
         
     - name: Upload Beta Artifact
       if: github.ref_name == 'BETA'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ExamSplitter-Beta-v${{ steps.extract_version.outputs.version }}
         path: ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip
         
     - name: Comment on Beta commit
       if: github.ref_name == 'BETA'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           const comment = `## Beta 테스트 빌드 완료
