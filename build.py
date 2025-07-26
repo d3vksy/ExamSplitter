@@ -134,4 +134,4 @@ def main():
     print(f"파일 크기: {file_size:.2f} MB")
 
 if __name__ == "__main__":
-    main() 
+    main()  
