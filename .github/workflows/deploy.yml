@@ -69,8 +69,7 @@ jobs:
         }
         Compress-Archive -Path "ExamSplitter-v$version\*" -DestinationPath "ExamSplitter-v$version.zip"
         
-    - name: Create Release (Main branch only)
-      if: github.ref_name == 'main'
+    - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.extract_version.outputs.version }}
@@ -104,26 +103,4 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Upload Beta Artifact
-      if: github.ref_name == 'BETA'
-      uses: actions/upload-artifact@v4
-      with:
-        name: ExamSplitter-Beta-v${{ steps.extract_version.outputs.version }}
-        path: ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip
-        
-    - name: Comment on Beta commit
-      if: github.ref_name == 'BETA'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const comment = `## Beta 테스트 빌드 완료
-          
-          **빌드 성공**: v${{ steps.extract_version.outputs.version }}
-          **다운로드**: Actions 탭의 Artifacts에서 다운로드 가능
-          
-          github.rest.repos.createCommitComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            commit_sha: context.sha,
-            body: comment
-          }); 
+ 

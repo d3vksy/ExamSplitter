@@ -48,27 +48,17 @@ jobs:
         name: ExamSplitter-BetaBuild
         path: dist/ExamSplitter.exe
         
-    - name: Comment on commit
+    - name: Build Summary
       if: github.event_name == 'push'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const path = require('path');
-          
-          const exePath = 'dist/ExamSplitter.exe';
-          const fileSize = fs.existsSync(exePath) ? 
-            (fs.statSync(exePath).size / (1024 * 1024)).toFixed(2) : 'N/A';
-          
-          const comment = `## Beta 테스트 빌드 완료
-          
-          **빌드 성공**
-          **파일 크기**: ${fileSize} MB
-          **다운로드**: Actions 탭의 Artifacts에서 다운로드 가능
-          
-          github.rest.repos.createCommitComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            commit_sha: context.sha,
-            body: comment
-          }); 
+      run: |
+        $fileSize = (Get-Item "dist\ExamSplitter.exe").Length / 1MB
+        echo "## Beta 테스트 빌드 완료" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "**빌드 성공**" >> $env:GITHUB_STEP_SUMMARY
+        echo "**파일 크기**: $([math]::Round($fileSize, 2)) MB" >> $env:GITHUB_STEP_SUMMARY
+        echo "**다운로드**: Actions 탭의 Artifacts에서 다운로드 가능" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "### 다음 단계" >> $env:GITHUB_STEP_SUMMARY
+        echo "1. 다운로드한 실행 파일 테스트" >> $env:GITHUB_STEP_SUMMARY
+        echo "2. 문제 없으면 main 브랜치로 PR 생성" >> $env:GITHUB_STEP_SUMMARY
+        echo "3. PR 머지 후 main에서 \`deploy(버전명)\` 커밋으로 배포" >> $env:GITHUB_STEP_SUMMARY 
