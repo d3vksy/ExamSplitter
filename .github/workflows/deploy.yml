@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - main
-      - master
-      - beta
+      - BETA
   workflow_dispatch:
     inputs:
       version:
