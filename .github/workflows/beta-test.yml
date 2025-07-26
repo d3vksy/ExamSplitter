@@ -61,9 +61,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ExamSplitter-BetaBuild
-        path: |
-          dist/ExamSplitter.exe
-          ExamSplitter-Beta.zip
+        path: ExamSplitter-Beta.zip
         
     - name: Build Summary
       if: github.event_name == 'push'
@@ -74,8 +72,3 @@ jobs:
         echo "**빌드 성공**" >> $env:GITHUB_STEP_SUMMARY
         echo "**파일 크기**: $([math]::Round($fileSize, 2)) MB" >> $env:GITHUB_STEP_SUMMARY
         echo "**다운로드**: Actions 탭의 Artifacts에서 다운로드 가능" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "### 다음 단계" >> $env:GITHUB_STEP_SUMMARY
-        echo "1. 다운로드한 실행 파일 테스트" >> $env:GITHUB_STEP_SUMMARY
-        echo "2. 문제 없으면 main 브랜치로 PR 생성" >> $env:GITHUB_STEP_SUMMARY
-        echo "3. PR 머지 후 main에서 \`deploy(버전명)\` 커밋으로 배포" >> $env:GITHUB_STEP_SUMMARY 
