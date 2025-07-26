@@ -2,21 +2,38 @@
 
 ExamSplitter는 GitHub Actions를 사용한 자동 배포 시스템을 구축했습니다.
 
-### 배포 방법
+### 배포 워크플로우
 
-#### 1. 커밋 메시지로 자동 배포
+#### 1. Beta 테스트 (BETA 브랜치)
 ```bash
-# 버전 1.0.0 배포
-git commit -m "deploy(1.0.0): 초기 버전 배포"
-
-# 버전 1.1.0 배포  
-git commit -m "deploy(1.1.0): UI 개선 및 버그 수정"
-
-# 버전 2.0.0 배포
-git commit -m "deploy(2.0.0): 새로운 기능 추가"
+# BETA 브랜치에서 테스트 빌드
+git checkout BETA
+git commit -m "deploy(1.0.0): beta 테스트 빌드"
+git push origin BETA
 ```
 
-#### 2. GitHub Actions 수동 실행
+**결과:**
+- PyInstaller 빌드 테스트
+- Artifacts에 실행 파일 업로드
+- 커밋에 테스트 결과 댓글
+- GitHub Releases에는 업로드 안됨
+
+#### 2. 최종 배포 (main 브랜치)
+```bash
+# main 브랜치로 머지 후 배포
+git checkout main
+git merge BETA
+git commit -m "deploy(1.0.0): 최종 버전 배포"
+git push origin main
+```
+
+**결과:**
+- PyInstaller 빌드
+- GitHub Releases에 자동 업로드
+- 태그 생성
+- 릴리즈 노트 자동 생성
+
+#### 3. GitHub Actions 수동 실행
 1. GitHub 저장소 → Actions 탭
 2. "Deploy ExamSplitter" 워크플로우 선택
 3. "Run workflow" 클릭
@@ -24,14 +41,15 @@ git commit -m "deploy(2.0.0): 새로운 기능 추가"
 
 ### 배포 과정
 
-1. **트리거**: `deploy(버전명)` 패턴의 커밋 메시지로 push
-2. **빌드**: Windows 환경에서 PyInstaller로 실행 파일 생성
-3. **패키징**: 실행 파일, README, LICENSE, models 폴더를 ZIP으로 압축
-4. **릴리즈**: GitHub Releases에 자동 업로드
+1. **Beta 테스트**: BETA 브랜치에서 `deploy(버전명)` 커밋
+2. **테스트 확인**: 다운로드한 실행 파일 테스트
+3. **Main 머지**: 문제 없으면 main 브랜치로 머지
+4. **최종 배포**: main에서 `deploy(버전명)` 커밋으로 배포
 
 ### 배포 결과물
 
-- `ExamSplitter-v{버전}.zip`: Windows 실행 파일 패키지
+- **Beta**: `ExamSplitter-Beta-v{버전}.zip` (Artifacts)
+- **Main**: `ExamSplitter-v{버전}.zip` (GitHub Releases)
 - GitHub Releases에 자동 태그 생성
 - 릴리즈 노트 자동 생성
 
@@ -77,3 +95,4 @@ Pull Request가 생성되면 자동으로 테스트 빌드가 실행됩니다:
 - **Python 버전**: `python-version: '3.9'` 변경
 - **PyInstaller 옵션**: `--hidden-import` 추가/제거
 - **릴리즈 노트**: `body:` 섹션 수정
+

@@ -11,6 +11,12 @@ on:
         description: 'Release version'
         required: true
         default: '1.0.0'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: '1.0.0'
 
 jobs:
   build-and-deploy:
@@ -47,6 +53,7 @@ jobs:
         }
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "Building version: $version"
+        echo "branch=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
         
     - name: Build with PyInstaller
       run: |
@@ -74,36 +81,61 @@ jobs:
         if exist models xcopy models "ExamSplitter-v$version\models\" /E /I
         Compress-Archive -Path "ExamSplitter-v$version\*" -DestinationPath "ExamSplitter-v$version.zip"
         
-    - name: Create Release
+    - name: Create Release (Main branch only)
+      if: github.ref_name == 'main'
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.extract_version.outputs.version }}
         name: ExamSplitter v${{ steps.extract_version.outputs.version }}
         body: |
-          ## 🎉 ExamSplitter v${{ steps.extract_version.outputs.version }}
+          ## ExamSplitter v${{ steps.extract_version.outputs.version }}
           
-          ### 📥 다운로드
+          ### 다운로드
           - **Windows**: `ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip`
           
-          ### 🚀 설치 방법
+          ### 설치 방법
           1. zip 파일을 다운로드하고 압축 해제
           2. `ExamSplitter.exe` 더블클릭으로 실행
           
-          ### ✨ 주요 기능
-          - 🤖 PDF 시험지 문제 자동 감지 (YOLOv8)
-          - 🖼️ 다양한 출력 형식 지원
-          - 🎨 직관적인 GUI 인터페이스
-          - ✏️ 실시간 박스 편집 기능
+          ### 주요 기능
+          - PDF 시험지 문제 자동 감지 (YOLOv8)
+          - 다양한 출력 형식 지원
+          - 직관적인 GUI 인터페이스
+          - 실시간 박스 편집 기능
           
-          ### 💻 시스템 요구사항
+          ### 시스템 요구사항
           - Windows 10/11 (64bit)
           - 최소 4GB RAM
           - 500MB 이상의 디스크 공간
           
-          ### 📝 변경사항
+          ### 변경사항
           자세한 변경사항은 [커밋 히스토리](https://github.com/${{ github.repository }}/commits)를 확인하세요.
         files: ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip
         draft: false
         prerelease: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload Beta Artifact
+      if: github.ref_name == 'BETA'
+      uses: actions/upload-artifact@v3
+      with:
+        name: ExamSplitter-Beta-v${{ steps.extract_version.outputs.version }}
+        path: ExamSplitter-v${{ steps.extract_version.outputs.version }}.zip
+        
+    - name: Comment on Beta commit
+      if: github.ref_name == 'BETA'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const comment = `## Beta 테스트 빌드 완료
+          
+          **빌드 성공**: v${{ steps.extract_version.outputs.version }}
+          **다운로드**: Actions 탭의 Artifacts에서 다운로드 가능
+          
+          github.rest.repos.createCommitComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            commit_sha: context.sha,
+            body: comment
+          }); 

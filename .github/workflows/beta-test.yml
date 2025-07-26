@@ -1,11 +1,12 @@
-name: Test Build
+name: Beta Test Build
 
 on:
-  pull_request:
-    branches: [ main, BETA ]
+  push:
+    branches:
+      - BETA
 
 jobs:
-  test-build:
+  beta-test:
     runs-on: windows-latest
     
     steps:
@@ -49,8 +50,32 @@ jobs:
           exit 1
         }
         
-    - name: Upload build artifact
+    - name: Upload beta build artifact
       uses: actions/upload-artifact@v3
       with:
-        name: ExamSplitter-TestBuild
-        path: dist/ExamSplitter.exe 
+        name: ExamSplitter-BetaBuild
+        path: dist/ExamSplitter.exe
+        
+    - name: Comment on commit
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          const exePath = 'dist/ExamSplitter.exe';
+          const fileSize = fs.existsSync(exePath) ? 
+            (fs.statSync(exePath).size / (1024 * 1024)).toFixed(2) : 'N/A';
+          
+          const comment = `## Beta 테스트 빌드 완료
+          
+          **빌드 성공**
+          **파일 크기**: ${fileSize} MB
+          **다운로드**: Actions 탭의 Artifacts에서 다운로드 가능
+          
+          github.rest.repos.createCommitComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            commit_sha: context.sha,
+            body: comment
+          }); 
