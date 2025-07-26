@@ -65,7 +65,9 @@ jobs:
         copy dist\ExamSplitter.exe "ExamSplitter-v$version\"
         copy README.md "ExamSplitter-v$version\"
         copy LICENSE "ExamSplitter-v$version\"
-        if exist models xcopy models "ExamSplitter-v$version\models\" /E /I
+        if (Test-Path "models") {
+          xcopy models "ExamSplitter-v$version\models\" /E /I
+        }
         Compress-Archive -Path "ExamSplitter-v$version\*" -DestinationPath "ExamSplitter-v$version.zip"
         
     - name: Create Release (Main branch only)
