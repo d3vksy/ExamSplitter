@@ -7,7 +7,7 @@
 import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
-from ..config import DEFAULT_DPI, DEFAULT_CONFIDENCE, DEFAULT_GROUP_SIZE
+from ..config.settings import get_processing_settings
 
 class SettingsPanel(ttk.LabelFrame):
     def __init__(self, parent, callback=None, detector=None):
@@ -15,9 +15,11 @@ class SettingsPanel(ttk.LabelFrame):
         self.callback = callback
         self.detector = detector
         
-        self.dpi_var = tk.IntVar(value=DEFAULT_DPI)
-        self.confidence_var = tk.DoubleVar(value=DEFAULT_CONFIDENCE)
-        self.group_size_var = tk.IntVar(value=DEFAULT_GROUP_SIZE)
+        # 기본 설정값 가져오기
+        default_settings = get_processing_settings()
+        self.dpi_var = tk.IntVar(value=default_settings.dpi)
+        self.confidence_var = tk.DoubleVar(value=default_settings.confidence)
+        self.group_size_var = tk.IntVar(value=default_settings.group_size)
         
         self.output_formats = {
             "개별 이미지": tk.BooleanVar(value=True),
@@ -125,7 +127,15 @@ class SettingsPanel(ttk.LabelFrame):
     def update_available_models(self):
         """사용 가능한 모델들을 찾아서 콤보박스를 업데이트합니다."""
         try:
+            # models 폴더에서 모델 찾기 (exe 파일 지원)
             models_dir = Path.cwd() / "models"
+            
+            # exe 파일인 경우 exe 디렉토리에서 찾기
+            import sys
+            if getattr(sys, 'frozen', False):
+                exe_dir = Path(sys.executable).parent
+                models_dir = exe_dir / "models"
+            
             if not models_dir.exists():
                 return
             
@@ -157,8 +167,15 @@ class SettingsPanel(ttk.LabelFrame):
                 self.model_info_label.config(text="선택된 모델 없음")
                 return
             
-            # 선택된 모델 파일 정보
+            # 선택된 모델 파일 정보 (exe 파일 지원)
             models_dir = Path.cwd() / "models"
+            
+            # exe 파일인 경우 exe 디렉토리에서 찾기
+            import sys
+            if getattr(sys, 'frozen', False):
+                exe_dir = Path(sys.executable).parent
+                models_dir = exe_dir / "models"
+            
             model_path = models_dir / selected_model
             
             if not model_path.exists():

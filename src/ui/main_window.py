@@ -14,7 +14,7 @@ from .canvas_widget import ImageCanvas
 from .settings_panel import SettingsPanel
 from ..utils.question_detector import QuestionDetector
 from ..utils.pdf_generator import PDFGenerator
-from ..config import DEFAULT_DPI, DEFAULT_CONFIDENCE, DEFAULT_GROUP_SIZE
+from ..config.settings import get_processing_settings
 
 class MainWindow:
     def __init__(self, root, config=None):
@@ -110,8 +110,15 @@ class MainWindow:
     def _initialize_first_model(self):
         """첫 번째 모델을 자동으로 로드합니다."""
         try:
-            # models 폴더에서 첫 번째 .pt 파일 찾기
+            # models 폴더에서 첫 번째 .pt 파일 찾기 (exe 파일 지원)
             models_dir = Path.cwd() / "models"
+            
+            # exe 파일인 경우 exe 디렉토리에서 찾기
+            import sys
+            if getattr(sys, 'frozen', False):
+                exe_dir = Path(sys.executable).parent
+                models_dir = exe_dir / "models"
+            
             if models_dir.exists():
                 pt_files = list(models_dir.glob("*.pt"))
                 if pt_files:
