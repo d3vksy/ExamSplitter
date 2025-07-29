@@ -28,7 +28,13 @@ class ExamSplitterApp:
             config: 애플리케이션 설정 (None이면 기본 설정 사용)
         """
         self.logger = get_logger(__name__)
-        self.config = config or self._create_default_config()
+        
+        # 설정 관리자를 통해 일관된 설정 사용
+        if config is None:
+            from src.config.settings import get_app_config
+            self.config = get_app_config()
+        else:
+            self.config = config
         
         # 로깅 설정
         self._setup_logging()
@@ -40,14 +46,10 @@ class ExamSplitterApp:
         self.logger.info("ExamSplitter 애플리케이션 초기화 완료")
     
     def _create_default_config(self) -> ApplicationConfig:
-        """기본 설정을 생성합니다."""
-        project_root = Path(__file__).parent.parent
-        return ApplicationConfig(
-            project_root=project_root,
-            model_directory=project_root / "models",
-            output_directory=project_root / "outputs",
-            temp_directory=project_root / "temp"
-        )
+        """기본 설정을 생성합니다. (하위 호환성을 위해 유지)"""
+        from src.config.defaults import DefaultSettings
+        defaults = DefaultSettings.get_app_config_defaults()
+        return ApplicationConfig(**defaults)
     
     def _setup_logging(self) -> None:
         """로깅을 설정합니다."""

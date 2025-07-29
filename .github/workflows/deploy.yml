@@ -28,7 +28,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pyinstaller
         
     - name: Extract version from commit message
       id: extract_version
@@ -36,7 +35,7 @@ jobs:
         if ("${{ github.event_name }}" -eq "workflow_dispatch") {
           $version = "${{ github.event.inputs.version }}"
           if ([string]::IsNullOrEmpty($version)) {
-            echo "Error: Version is required for manual workflow dispatch"
+            Write-Host "Error: Version is required for manual workflow dispatch"
             exit 1
           }
         } else {
@@ -44,37 +43,33 @@ jobs:
           if ($commitMessage -match "deploy\(([^)]+)\)") {
             $version = $matches[1]
           } else {
-            echo "No deploy pattern found in commit message: $commitMessage"
-            echo "Expected format: deploy(version): description"
+            Write-Host "No deploy pattern found in commit message: $commitMessage"
+            Write-Host "Expected format: deploy(version): description"
             exit 1
           }
         }
+        Write-Host "Extracted version: $version"
         echo "version=$version" >> $env:GITHUB_OUTPUT
-        echo "Building version: $version"
         echo "branch=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
         
     - name: Build with PyInstaller
-      run: |
-        pyinstaller --onefile --name ExamSplitter --add-data "models;models" --add-data "banner.png;." --icon "banner.png" --hidden-import ultralytics --hidden-import cv2 --hidden-import fitz --hidden-import PIL --hidden-import reportlab --hidden-import numpy --hidden-import tkinter --exclude-module matplotlib --exclude-module scipy --exclude-module pandas --exclude-module jupyter --exclude-module IPython --exclude-module notebook --exclude-module ipykernel --exclude-module tornado --exclude-module zmq --exclude-module pyzmq --exclude-module jinja2 --exclude-module markupsafe --exclude-module nbformat --exclude-module nbconvert --exclude-module pygments --exclude-module mistune --exclude-module defusedxml --exclude-module bleach --exclude-module entrypoints --exclude-module webencodings --exclude-module html5lib --exclude-module six --exclude-module packaging --exclude-module pyparsing --exclude-module setuptools --exclude-module wheel --exclude-module pip --exclude-module pkg_resources --exclude-module pkg_resources._vendor --exclude-module pkg_resources._vendor.packaging --exclude-module pkg_resources._vendor.pyparsing --exclude-module pkg_resources._vendor.six --exclude-module pkg_resources._vendor.html5lib --exclude-module pkg_resources._vendor.bleach --exclude-module pkg_resources._vendor.defusedxml --exclude-module pkg_resources._vendor.entrypoints --exclude-module pkg_resources._vendor.webencodings --exclude-module pkg_resources._vendor.mistune --exclude-module pkg_resources._vendor.nbformat --exclude-module pkg_resources._vendor.nbconvert --exclude-module pkg_resources._vendor.pygments --exclude-module pkg_resources._vendor.jinja2 --exclude-module pkg_resources._vendor.markupsafe --exclude-module pkg_resources._vendor.tornado --exclude-module pkg_resources._vendor.zmq --exclude-module pkg_resources._vendor.pyzmq --exclude-module pkg_resources._vendor.notebook --exclude-module pkg_resources._vendor.ipykernel --exclude-module pkg_resources._vendor.IPython --exclude-module pkg_resources._vendor.jupyter --exclude-module pkg_resources._vendor.pandas --exclude-module pkg_resources._vendor.scipy --exclude-module pkg_resources._vendor.matplotlib --clean main.py
-          
+      run: python build_pyinstaller.py
+
     - name: Create release package
       run: |
         $version = "${{ steps.extract_version.outputs.version }}"
-        mkdir "ExamSplitter-v$version"
-        copy dist\ExamSplitter.exe "ExamSplitter-v$version\"
-        copy README.md "ExamSplitter-v$version\"
-        copy LICENSE "ExamSplitter-v$version\"
-        if (Test-Path "models") {
-          Copy-Item -Path "models" -Destination "ExamSplitter-v$version\models" -Recurse -Force
-          echo "Models folder copied successfully"
+        New-Item -ItemType Directory -Force -Path "ExamSplitter-v$version" | Out-Null
+        if (Test-Path "dist/ExamSplitter") {
+          Copy-Item -Path "dist/ExamSplitter" -Destination "ExamSplitter-v$version/ExamSplitter" -Recurse -Force
         } else {
-          echo "Warning: models folder not found"
+          Write-Host "Error: ExamSplitter folder not found"
+          exit 1
         }
-        echo "Creating ZIP file..."
-        Compress-Archive -Path "ExamSplitter-v$version\*" -DestinationPath "ExamSplitter-v$version.zip" -Force
-        echo "ZIP file created: ExamSplitter-v$version.zip"
-        echo "Contents of ZIP:"
-        Get-ChildItem "ExamSplitter-v$version" -Recurse | ForEach-Object { echo "  $($_.FullName)" }
+        Copy-Item README.md "ExamSplitter-v$version/" -Force
+        Copy-Item LICENSE "ExamSplitter-v$version/" -Force
+        Compress-Archive -Path "ExamSplitter-v$version/*" -DestinationPath "ExamSplitter-v$version.zip" -Force
+        Remove-Item -Recurse -Force "ExamSplitter-v$version"
+        Write-Host "ZIP package created: ExamSplitter-v$version.zip"
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
@@ -109,5 +104,3 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
- 

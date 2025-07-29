@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - BETA
-  pull_request:
-    branches:
-      - main
 
 jobs:
   beta-test:
@@ -25,37 +22,35 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pyinstaller
         
-    - name: Test PyInstaller build
-      run: |
-        pyinstaller --onefile --name ExamSplitter --add-data "models;models" --add-data "banner.png;." --hidden-import ultralytics --hidden-import cv2 --hidden-import fitz --hidden-import PIL --hidden-import reportlab --hidden-import numpy --hidden-import tkinter --exclude-module matplotlib --exclude-module scipy --exclude-module pandas --exclude-module jupyter --exclude-module IPython --exclude-module notebook --exclude-module ipykernel --exclude-module tornado --exclude-module zmq --exclude-module pyzmq --exclude-module jinja2 --exclude-module markupsafe --exclude-module nbformat --exclude-module nbconvert --exclude-module pygments --exclude-module mistune --exclude-module defusedxml --exclude-module bleach --exclude-module entrypoints --exclude-module webencodings --exclude-module html5lib --exclude-module six --exclude-module packaging --exclude-module pyparsing --exclude-module setuptools --exclude-module wheel --exclude-module pip --exclude-module pkg_resources --exclude-module pkg_resources._vendor --exclude-module pkg_resources._vendor.packaging --exclude-module pkg_resources._vendor.pyparsing --exclude-module pkg_resources._vendor.six --exclude-module pkg_resources._vendor.html5lib --exclude-module pkg_resources._vendor.bleach --exclude-module pkg_resources._vendor.defusedxml --exclude-module pkg_resources._vendor.entrypoints --exclude-module pkg_resources._vendor.webencodings --exclude-module pkg_resources._vendor.mistune --exclude-module pkg_resources._vendor.nbformat --exclude-module pkg_resources._vendor.nbconvert --exclude-module pkg_resources._vendor.pygments --exclude-module pkg_resources._vendor.jinja2 --exclude-module pkg_resources._vendor.markupsafe --exclude-module pkg_resources._vendor.tornado --exclude-module pkg_resources._vendor.zmq --exclude-module pkg_resources._vendor.pyzmq --exclude-module pkg_resources._vendor.notebook --exclude-module pkg_resources._vendor.ipykernel --exclude-module pkg_resources._vendor.IPython --exclude-module pkg_resources._vendor.jupyter --exclude-module pkg_resources._vendor.pandas --exclude-module pkg_resources._vendor.scipy --exclude-module pkg_resources._vendor.matplotlib --clean main.py
-        
+    - name: Build with PyInstaller
+      run: python build_pyinstaller.py
+
     - name: Verify executable
       run: |
-        if (Test-Path "dist\ExamSplitter.exe") {
-          echo "Build successful - ExamSplitter.exe created"
-          $fileSize = (Get-Item "dist\ExamSplitter.exe").Length / 1MB
-          echo "Executable size: $([math]::Round($fileSize, 2)) MB"
+        if (Test-Path "dist/ExamSplitter/ExamSplitter.exe") {
+          Write-Host "Build successful - ExamSplitter.exe created"
+          $folderSize = (Get-ChildItem "dist/ExamSplitter" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+          Write-Host "Folder size: $([math]::Round($folderSize, 2)) MB"
         } else {
-          echo "Build failed - ExamSplitter.exe not found"
+          Write-Host "Build failed - ExamSplitter.exe not found"
           exit 1
         }
         
     - name: Create beta package
       run: |
         mkdir "ExamSplitter-Beta"
-        copy dist\ExamSplitter.exe "ExamSplitter-Beta\"
-        copy README.md "ExamSplitter-Beta\"
-        copy LICENSE "ExamSplitter-Beta\"
-        if (Test-Path "models") {
-          Copy-Item -Path "models" -Destination "ExamSplitter-Beta\models" -Recurse -Force
-          echo "Models folder copied successfully"
+        if (Test-Path "dist/ExamSplitter") {
+          Copy-Item -Path "dist/ExamSplitter" -Destination "ExamSplitter-Beta/ExamSplitter" -Recurse -Force
         } else {
-          echo "Warning: models folder not found"
+          Write-Host "Error: ExamSplitter folder not found"
+          exit 1
         }
-        Compress-Archive -Path "ExamSplitter-Beta\*" -DestinationPath "ExamSplitter-Beta.zip" -Force
-        echo "Beta package created: ExamSplitter-Beta.zip"
+        Copy-Item README.md "ExamSplitter-Beta/" -Force
+        Copy-Item LICENSE "ExamSplitter-Beta/" -Force
+        Compress-Archive -Path "ExamSplitter-Beta/*" -DestinationPath "ExamSplitter-Beta.zip" -Force
+        Remove-Item -Recurse -Force "ExamSplitter-Beta"
+        Write-Host "Beta package created: ExamSplitter-Beta.zip"
         
     - name: Upload beta build artifact
       uses: actions/upload-artifact@v4
@@ -66,9 +61,8 @@ jobs:
     - name: Build Summary
       if: github.event_name == 'push'
       run: |
-        $fileSize = (Get-Item "dist\ExamSplitter.exe").Length / 1MB
+        $folderSize = (Get-ChildItem "dist/ExamSplitter" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
         echo "## Beta 테스트 빌드 완료" >> $env:GITHUB_STEP_SUMMARY
-        echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**빌드 성공**" >> $env:GITHUB_STEP_SUMMARY
-        echo "**파일 크기**: $([math]::Round($fileSize, 2)) MB" >> $env:GITHUB_STEP_SUMMARY
+        echo "**폴더 크기**: $([math]::Round($folderSize, 2)) MB" >> $env:GITHUB_STEP_SUMMARY
         echo "**다운로드**: Actions 탭의 Artifacts에서 다운로드 가능" >> $env:GITHUB_STEP_SUMMARY

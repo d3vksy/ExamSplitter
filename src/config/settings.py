@@ -12,6 +12,7 @@ from ..utils.validators import (
     validate_dpi, validate_confidence, validate_group_size,
     validate_shuffle_seed, validate_output_formats
 )
+from .defaults import DefaultSettings
 
 logger = get_logger(__name__)
 
@@ -53,7 +54,7 @@ class SettingsManager:
         """설정 관리자를 초기화합니다."""
         self.logger = get_logger(__name__)
         
-        # 기본 설정들
+        # 중앙화된 기본값 사용
         self.app_config = self._create_default_app_config()
         self.processing_settings = self._create_default_processing_settings()
         self.ui_config = self._create_default_ui_config()
@@ -61,48 +62,46 @@ class SettingsManager:
     
     def _create_default_app_config(self) -> ApplicationConfig:
         """기본 애플리케이션 설정을 생성합니다."""
-        project_root = Path(__file__).parent.parent.parent
-        return ApplicationConfig(
-            project_root=project_root,
-            model_directory=project_root / "models",
-            output_directory=project_root / "outputs",
-            temp_directory=project_root / "temp",
-            log_level="INFO",
-            log_format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            max_workers=1,
-            batch_size=1
-        )
+        defaults = DefaultSettings.get_app_config_defaults()
+        return ApplicationConfig(**defaults)
     
     def _create_default_processing_settings(self) -> ProcessingSettings:
         """기본 처리 설정을 생성합니다."""
-        return ProcessingSettings(
-            dpi=200,
-            confidence=0.3,
-            group_size=5,
-            max_file_size_mb=50,
-            output_formats={
-                "개별 이미지": True,
-                "개별 PDF": True,
-                "그룹 PDF": False,
-                "전체 문제집": False,
-                "셔플 문제집": False
-            },
-            shuffle_seed=None
-        )
+        defaults = DefaultSettings.get_processing_defaults()
+        return ProcessingSettings(**defaults)
     
     def _create_default_ui_config(self) -> UIConfig:
         """기본 UI 설정을 생성합니다."""
-        return UIConfig()
+        defaults = DefaultSettings.get_ui_defaults()
+        return UIConfig(**defaults)
     
     def _create_default_model_config(self) -> ModelConfig:
         """기본 모델 설정을 생성합니다."""
-        return ModelConfig()
+        defaults = DefaultSettings.get_model_defaults()
+        return ModelConfig(**defaults)
     
 
     
     def get_processing_settings(self) -> ProcessingSettings:
         """현재 처리 설정을 반환합니다."""
         return self.processing_settings
+    
+    def get_app_config(self) -> ApplicationConfig:
+        """현재 애플리케이션 설정을 반환합니다."""
+        return self.app_config
+    
+    def update_app_config(self, **kwargs) -> None:
+        """애플리케이션 설정을 업데이트합니다."""
+        try:
+            for key, value in kwargs.items():
+                if hasattr(self.app_config, key):
+                    setattr(self.app_config, key, value)
+            
+            self.logger.info("애플리케이션 설정 업데이트 완료")
+            
+        except Exception as e:
+            self.logger.error(f"애플리케이션 설정 업데이트 실패: {e}")
+            raise
     
     def update_processing_settings(self, **kwargs) -> None:
         """처리 설정을 업데이트합니다."""
@@ -185,6 +184,7 @@ class SettingsManager:
     def reset_to_defaults(self) -> None:
         """설정을 기본값으로 초기화합니다."""
         try:
+            self.app_config = self._create_default_app_config()
             self.processing_settings = self._create_default_processing_settings()
             self.ui_config = self._create_default_ui_config()
             self.model_config = self._create_default_model_config()
@@ -211,6 +211,11 @@ def get_settings_manager() -> SettingsManager:
 def get_processing_settings() -> ProcessingSettings:
     """현재 처리 설정을 반환합니다."""
     return get_settings_manager().get_processing_settings()
+
+
+def get_app_config() -> ApplicationConfig:
+    """현재 애플리케이션 설정을 반환합니다."""
+    return get_settings_manager().get_app_config()
 
 
 def get_ui_config() -> UIConfig:

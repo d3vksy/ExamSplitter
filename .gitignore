@@ -33,6 +33,13 @@ MANIFEST
 *.manifest
 *.spec
 
+# PyInstaller
+build/
+dist/
+*.spec
+ExamSplitter/
+__pycache__/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
