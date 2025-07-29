@@ -55,24 +55,6 @@ jobs:
     - name: Build with PyInstaller
       run: python build_pyinstaller.py
 
-    - name: UPX Compress Executable
-      run: |
-        $exePath = "dist/ExamSplitter/ExamSplitter.exe"
-        if (Test-Path $exePath) {
-          $originalSize = (Get-Item $exePath).Length / 1MB
-          Write-Host "Original exe size: $([math]::Round($originalSize,2)) MB"
-          try {
-            choco install upx -y
-            upx --best --lzma $exePath
-            $compressedSize = (Get-Item $exePath).Length / 1MB
-            Write-Host "UPX compressed size: $([math]::Round($compressedSize,2)) MB"
-          } catch {
-            Write-Host "UPX compression skipped (UPX not available)"
-          }
-        } else {
-          Write-Host "ExamSplitter.exe not found, skipping UPX"
-        }
-          
     - name: Create release package
       run: |
         $version = "${{ steps.extract_version.outputs.version }}"
