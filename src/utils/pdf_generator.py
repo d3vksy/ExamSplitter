@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from PIL import Image
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
 
 class PDFGenerator:
     """PDF 생성 클래스"""
@@ -81,15 +84,25 @@ class PDFGenerator:
     def _create_single_pdf(self, image_path: str, output_path: str) -> None:
         """단일 이미지를 PDF로 변환합니다."""
         try:
-            from reportlab.pdfgen import canvas
-            from reportlab.lib.pagesizes import letter
-            
             img = Image.open(image_path)
             img_width, img_height = img.size
             
-            # PDF 생성
-            c = canvas.Canvas(output_path, pagesize=(img_width, img_height))
-            c.drawImage(image_path, 0, 0, img_width, img_height)
+            # A4 크기 (210mm x 297mm)
+            a4_width, a4_height = A4
+            
+            # 이미지 비율 유지하면서 A4에 맞게 조정
+            scale_x = (a4_width - 60*mm) / img_width
+            scale_y = (a4_height - 100*mm) / img_height
+            scale = min(scale_x, scale_y) * 0.8
+            
+            new_width = img_width * scale
+            new_height = img_height * scale
+            
+            x_offset = (a4_width - new_width) / 2
+            y_offset = a4_height - new_height - 10*mm
+            
+            c = canvas.Canvas(output_path, pagesize=A4)
+            c.drawImage(image_path, x_offset, y_offset, new_width, new_height)
             c.save()
             
         except Exception as e:
@@ -98,18 +111,26 @@ class PDFGenerator:
     def _create_group_pdf(self, image_paths: List[str], output_path: str) -> None:
         """여러 이미지를 하나의 PDF로 결합합니다."""
         try:
-            from reportlab.pdfgen import canvas
-            from reportlab.lib.pagesizes import letter
-            
-            c = canvas.Canvas(output_path)
+            c = canvas.Canvas(output_path, pagesize=A4)
             
             for img_path in image_paths:
                 img = Image.open(img_path)
                 img_width, img_height = img.size
                 
-                # 페이지 크기 설정
-                c.setPageSize((img_width, img_height))
-                c.drawImage(img_path, 0, 0, img_width, img_height)
+                a4_width, a4_height = A4
+                
+                scale_x = (a4_width - 60*mm) / img_width
+                scale_y = (a4_height - 100*mm) / img_height
+                scale = min(scale_x, scale_y) * 0.8
+                
+                new_width = img_width * scale
+                new_height = img_height * scale
+                
+                x_offset = (a4_width - new_width) / 2
+                y_offset = a4_height - new_height - 10*mm
+                
+                c.setPageSize(A4)
+                c.drawImage(img_path, x_offset, y_offset, new_width, new_height)
                 c.showPage()
             
             c.save()

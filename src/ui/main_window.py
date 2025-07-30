@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 import threading
+import cv2
 from PIL import Image, ImageTk
 
 from .canvas_widget import ImageCanvas
@@ -300,23 +301,34 @@ class MainWindow:
             
             created_files = []
             
-            self.root.after(0, lambda: self._update_progress(20, "개별 이미지 생성 중..."))
+            # 개별 이미지 생성 (한 번만 생성하고 재사용)
+            individual_images = None
+            if any([output_formats["개별 이미지"], output_formats["개별 PDF"], output_formats["그룹 PDF"]]):
+                self.root.after(0, lambda: self._update_progress(20, "개별 이미지 생성 중..."))
+                # 임시 폴더에 이미지 생성
+                temp_images_dir = Path(output_dir) / "temp_images"
+                temp_images_dir.mkdir(exist_ok=True)
+                individual_images = self._regenerate_question_images(str(temp_images_dir))
+            
+            self.root.after(0, lambda: self._update_progress(30, "개별 이미지 생성 중..."))
             if output_formats["개별 이미지"]:
                 # 개별 이미지 폴더 생성
                 images_dir = Path(output_dir) / "개별_이미지"
                 images_dir.mkdir(exist_ok=True)
-                # 개별 이미지를 폴더에 저장
-                individual_images = self._regenerate_question_images(str(images_dir))
-                created_files.extend(individual_images)
+                # 임시 이미지들을 개별 이미지 폴더로 복사
+                for i, img_path in enumerate(individual_images):
+                    import shutil
+                    new_path = images_dir / f"문제_{i+1:03d}.png"
+                    shutil.copy2(img_path, new_path)
+                    created_files.append(str(new_path))
             
             self.root.after(0, lambda: self._update_progress(40, "개별 PDF 생성 중..."))
             if output_formats["개별 PDF"]:
                 # 개별 PDF 폴더 생성
                 pdfs_dir = Path(output_dir) / "개별_PDF"
                 pdfs_dir.mkdir(exist_ok=True)
-                # 개별 이미지를 다시 생성 (PDF용)
-                pdf_images = self._regenerate_question_images(str(pdfs_dir))
-                pdf_files = self.pdf_generator.create_individual_pdfs(pdf_images, str(pdfs_dir))
+                # 개별 PDF 생성
+                pdf_files = self.pdf_generator.create_individual_pdfs(individual_images, str(pdfs_dir))
                 created_files.extend(pdf_files)
             
             self.root.after(0, lambda: self._update_progress(60, "그룹 PDF 생성 중..."))
@@ -324,25 +336,31 @@ class MainWindow:
                 # 그룹 PDF 폴더 생성
                 groups_dir = Path(output_dir) / "그룹_PDF"
                 groups_dir.mkdir(exist_ok=True)
-                # 그룹용 이미지 생성
-                group_images = self._regenerate_question_images(str(groups_dir))
-                groups = self.pdf_generator.group_questions(group_images, settings['group_size'])
+                # 그룹 생성 및 PDF 생성
+                groups = self.pdf_generator.group_questions(individual_images, settings['group_size'])
                 group_files = self.pdf_generator.create_grouped_pdfs(groups, str(groups_dir))
                 created_files.extend(group_files)
             
             self.root.after(0, lambda: self._update_progress(80, "전체 문제집 생성 중..."))
             if output_formats["전체 문제집"]:
                 workbook_path = Path(output_dir) / "전체_문제집.pdf"
-                self.pdf_generator.create_exam_workbook(self.questions, {}, workbook_path)
+                self.pdf_generator.create_exam_workbook(self.questions, {}, str(workbook_path))
                 created_files.append(str(workbook_path))
             
             self.root.after(0, lambda: self._update_progress(90, "셔플 문제집 생성 중..."))
             if output_formats.get("셔플 문제집", False):
                 shuffled_path = Path(output_dir) / "셔플_문제집.pdf"
                 self.pdf_generator.create_shuffled_workbook(
-                    self.questions, {}, shuffled_path, settings.get('shuffle_seed')
+                    self.questions, {}, str(shuffled_path), settings.get('shuffle_seed')
                 )
                 created_files.append(str(shuffled_path))
+            
+            # 임시 폴더 정리
+            if individual_images:
+                import shutil
+                temp_images_dir = Path(output_dir) / "temp_images"
+                if temp_images_dir.exists():
+                    shutil.rmtree(temp_images_dir)
             
             self.root.after(0, self._stop_progress)
             self.root.after(0, lambda: self.progress_var.set(f"문제 분할 완료: {len(created_files)}개 파일 생성"))
@@ -363,7 +381,6 @@ class MainWindow:
     
     def _regenerate_question_images(self, output_dir):
         """편집된 박스 정보를 사용하여 개별 문제 이미지를 재생성합니다."""
-        import cv2
         import os
         
         question_images = []
