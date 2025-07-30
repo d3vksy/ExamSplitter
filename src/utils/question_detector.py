@@ -275,7 +275,6 @@ class QuestionDetector:
     
     def _create_individual_question_images(self, questions: List[Dict], output_dir: str) -> List[Dict]:
         """개별 문제 이미지를 생성합니다."""
-        import cv2
         
         for i, question in enumerate(questions):
             try:
