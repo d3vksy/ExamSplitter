@@ -18,6 +18,7 @@
 - pdf_generator.py: PDF 처리 및 생성
 - question_detector.py: YOLOv8 기반 문제 감지
 - validators.py: 입력 데이터 검증
+- model_utils.py: 모델 관련 유틸리티
 
 **4. Configuration Layer (src/config/)**
 - defaults.py: 기본 설정값
@@ -121,6 +122,18 @@
 - **담당**:
   - 데이터 무결성 보장
   - 사용자 입력 검증
+
+#### `model_utils.py`
+- **기능**: 모델 관련 유틸리티 함수
+- **주요 함수**:
+  - `get_model_directory()`: 모델 디렉토리 경로 반환
+  - `get_model_path()`: 모델 파일 경로 반환
+  - `get_available_models()`: 사용 가능한 모델 목록 반환
+  - `get_model_info()`: 모델 정보 반환
+- **담당**:
+  - 모델 파일 경로 관리
+  - 개발/배포 환경 호환성
+  - 모델 메타데이터 제공
 
 ### 4. Configuration Layer (`src/config/`)
 

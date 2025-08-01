@@ -18,7 +18,7 @@ ExamSplitter는 GitHub Actions를 사용한 자동화된 배포 시스템을 구
 **목적**: 테스트 빌드 및 검증
 
 #### 주요 단계:
-1. **환경 설정**: Python 3.9, 의존성 설치
+1. **환경 설정**: Python 3.10, 의존성 설치
 2. **빌드**: PyInstaller로 실행 파일 생성
 3. **검증**: 실행 파일 존재 및 크기 확인
 4. **패키징**: ZIP 파일 생성
@@ -37,7 +37,7 @@ ExamSplitter는 GitHub Actions를 사용한 자동화된 배포 시스템을 구
 **목적**: 정식 릴리즈 배포
 
 #### 주요 단계:
-1. **환경 설정**: Python 3.9, 의존성 설치
+1. **환경 설정**: Python 3.10, 의존성 설치
 2. **버전 추출**: 커밋 메시지에서 버전 파싱
 3. **빌드**: PyInstaller로 실행 파일 생성
 4. **패키징**: 버전별 ZIP 파일 생성
@@ -108,21 +108,31 @@ GitHub Actions UI에서 수동으로 배포할 수 있습니다:
 ```python
 # 주요 PyInstaller 옵션
 cmd = [
-    "pyinstaller",
-    ENTRY_FILE,
-    "--onedir",           # 단일 폴더로 빌드
-    "--noconsole",        # 콘솔 창 숨김
-    "--clean",            # 캐시 정리
-    f"--name={PROJECT_NAME}",
-    "--hidden-import=ultralytics",  # YOLOv8
-    "--hidden-import=torch",        # PyTorch
-    "--hidden-import=cv2",          # OpenCV
-    "--hidden-import=fitz",         # PyMuPDF
-    "--hidden-import=pymupdf",      # PyMuPDF (별칭)
-    f'--add-data="{banner_abs};."', # 배너 이미지 포함
-    "--distpath=dist",              # 출력 디렉토리
-    "--workpath=build",             # 작업 디렉토리
-    "--log-level=INFO"              # 로그 레벨
+        "pyinstaller",
+        ENTRY_FILE,
+        "--onedir",
+        # "--noconsole",  # 콘솔 창 표시하여 오류 확인 가능
+        "--clean",
+        f"--name={PROJECT_NAME}",
+        "--hidden-import=ultralytics",
+        "--hidden-import=torch",
+        "--hidden-import=torchvision",
+        "--hidden-import=onnxruntime",
+        "--hidden-import=cv2",
+        "--hidden-import=numpy",
+        "--hidden-import=PIL",
+        "--hidden-import=pandas",
+        "--hidden-import=reportlab",
+        "--hidden-import=tkinter",
+        "--hidden-import=fitz",
+        "--hidden-import=pymupdf",
+        "--collect-all=ultralytics",
+        "--collect-all=torch",
+        f'--add-data="{banner_abs};."',
+        "--distpath=dist",
+        "--workpath=build",
+        "--specpath=build",
+        "--log-level=INFO"
 ]
 ```
 
