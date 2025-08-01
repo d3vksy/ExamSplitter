@@ -9,7 +9,6 @@ from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 import threading
 import cv2
-from PIL import Image, ImageTk
 
 from .canvas_widget import ImageCanvas
 from .settings_panel import SettingsPanel
@@ -111,14 +110,9 @@ class MainWindow:
     def _initialize_first_model(self):
         """첫 번째 모델을 자동으로 로드합니다."""
         try:
-            # models 폴더에서 첫 번째 .pt 파일 찾기 (exe 파일 지원)
-            models_dir = Path.cwd() / "models"
-            
-            # exe 파일인 경우 exe 디렉토리에서 찾기
-            import sys
-            if getattr(sys, 'frozen', False):
-                exe_dir = Path(sys.executable).parent
-                models_dir = exe_dir / "models"
+            # models 폴더에서 첫 번째 .pt 파일 찾기
+            from ..utils.model_utils import get_model_directory
+            models_dir = get_model_directory()
             
             if models_dir.exists():
                 pt_files = list(models_dir.glob("*.pt"))
@@ -305,7 +299,7 @@ class MainWindow:
             
             created_files = []
             
-            # 개별 이미지 생성 (한 번만 생성하고 재사용)
+            # 개별 이미지 생성
             individual_images = None
             if any([output_formats["개별 이미지"], output_formats["개별 PDF"], output_formats["그룹 PDF"]]):
                 self.root.after(0, lambda: self._update_progress(20, "개별 이미지 생성 중..."))
@@ -380,7 +374,7 @@ class MainWindow:
         """특정 페이지를 표시합니다."""
         if 1 <= page_num <= len(self.page_images):
             page_image_path = self.page_images[page_num - 1]
-            # 전체 문제 목록을 전달 (페이지별 필터링은 canvas에서 처리)
+            # 전체 문제 목록을 전달
             self.image_canvas.load_image(page_image_path, page_num, self.questions)
     
     def _regenerate_question_images(self, output_dir):

@@ -117,17 +117,17 @@ class SettingsPanel(ttk.LabelFrame):
     
     def on_model_changed(self, event=None):
         """모델이 변경되었을 때 호출됩니다."""
-        # 콜백 즉시 호출 (모델 변경 처리)
+        # 콜백 즉시 호출
         if self.callback:
             self.callback()
         
-        # 모델 정보 업데이트 (약간의 지연 후)
+        # 모델 정보 업데이트
         self.after(200, self.update_model_info)
     
     def update_available_models(self):
         """사용 가능한 모델들을 찾아서 콤보박스를 업데이트합니다."""
         try:
-            # models 폴더에서 모델 찾기 (exe 파일 지원)
+            # models 폴더에서 모델 찾기
             models_dir = Path.cwd() / "models"
             
             # exe 파일인 경우 exe 디렉토리에서 찾기
@@ -149,7 +149,7 @@ class SettingsPanel(ttk.LabelFrame):
             # 콤보박스 업데이트
             self.model_combobox['values'] = model_names
             
-            # 기본값 설정 (첫 번째 모델 또는 현재 선택된 모델)
+            # 기본값 설정
             if not self.selected_model_var.get() or self.selected_model_var.get() not in model_names:
                 if model_names and model_names[0] != "모델 없음":
                     self.selected_model_var.set(model_names[0])
@@ -167,7 +167,7 @@ class SettingsPanel(ttk.LabelFrame):
                 self.model_info_label.config(text="선택된 모델 없음")
                 return
             
-            # 선택된 모델 파일 정보 (exe 파일 지원)
+            # 선택된 모델 파일 정보
             models_dir = Path.cwd() / "models"
             
             # exe 파일인 경우 exe 디렉토리에서 찾기

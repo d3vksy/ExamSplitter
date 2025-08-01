@@ -81,7 +81,7 @@ def validate_pdf_file(file_path: Union[str, Path]) -> Path:
     if path.suffix.lower() != '.pdf':
         raise ValueError(f"PDF 파일이 아닙니다: {path}")
     
-    # 파일 크기 검사 (50MB 제한)
+            # 파일 크기 검사
     file_size_mb = path.stat().st_size / (1024 * 1024)
     if file_size_mb > 50:
         raise ValueError(f"파일 크기가 너무 큽니다: {file_size_mb:.1f}MB (최대 50MB)")

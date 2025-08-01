@@ -9,12 +9,14 @@ from PIL import Image
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from ..utils.logger import get_logger
 
 class PDFGenerator:
     """PDF 생성 클래스"""
     
     def __init__(self):
         self.initialized = False
+        self.logger = get_logger(__name__)
     
     def create_individual_pdfs(self, question_images: List[str], output_dir: str) -> List[str]:
         """개별 PDF 파일들을 생성합니다."""
@@ -30,7 +32,7 @@ class PDFGenerator:
                 self._create_single_pdf(img_path, output_path)
                 created_files.append(output_path)
             except Exception as e:
-                pass
+                self.logger.error(f"PDF 생성 중 오류 발생 (문제 {i+1}): {e}")
         
         return created_files
     
@@ -52,7 +54,7 @@ class PDFGenerator:
                 self._create_group_pdf(group, output_path)
                 created_files.append(output_path)
             except Exception as e:
-                pass
+                self.logger.error(f"그룹 PDF 생성 중 오류 발생 (그룹 {i+1}): {e}")
         
         return created_files
     
@@ -87,7 +89,7 @@ class PDFGenerator:
             img = Image.open(image_path)
             img_width, img_height = img.size
             
-            # A4 크기 (210mm x 297mm)
+            # A4 크기
             a4_width, a4_height = A4
             
             # 이미지 비율 유지하면서 A4에 맞게 조정
@@ -146,4 +148,4 @@ class PDFGenerator:
             
         except Exception as e:
             # 정리 작업 중 오류가 발생해도 무시
-            pass 
+            self.logger.warning(f"PDFGenerator 정리 중 오류 발생: {e}") 

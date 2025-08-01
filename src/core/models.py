@@ -14,7 +14,7 @@ class DetectionResult:
     
     question_id: str
     page_number: int
-    bounding_box: Tuple[float, float, float, float]  # (x1, y1, x2, y2)
+    bounding_box: Tuple[float, float, float, float]  # x1, y1, x2, y2
     confidence: float
     image_path: Optional[Path] = None
     metadata: Dict[str, Any] = field(default_factory=dict)

@@ -14,7 +14,6 @@ sys.path.insert(0, str(project_root))
 
 from src.config.settings import ApplicationConfig
 from src.utils.logger import setup_logging, get_logger
-from src.core.exceptions import ExamSplitterError
 from src.ui.main_window import MainWindow
 
 
@@ -45,11 +44,7 @@ class ExamSplitterApp:
         
         self.logger.info("ExamSplitter 애플리케이션 초기화 완료")
     
-    def _create_default_config(self) -> ApplicationConfig:
-        """기본 설정을 생성합니다. (하위 호환성을 위해 유지)"""
-        from src.config.defaults import DefaultSettings
-        defaults = DefaultSettings.get_app_config_defaults()
-        return ApplicationConfig(**defaults)
+
     
     def _setup_logging(self) -> None:
         """로깅을 설정합니다."""
@@ -127,7 +122,7 @@ class ExamSplitterApp:
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         
-        # 윈도우 크기 계산 (화면의 80% 크기, 최소/최대 제한)
+        # 윈도우 크기 계산
         window_width = min(max(int(screen_width * 0.8), 800), 1400)
         window_height = min(max(int(screen_height * 0.8), 600), 1000)
         

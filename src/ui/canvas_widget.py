@@ -89,10 +89,10 @@ class ImageCanvas(ttk.Frame):
             self.current_page = page_num
             self.current_page_image_path = image_path
             
-            # 전체 문제 목록 저장 (항상 업데이트)
+            # 전체 문제 목록 저장
             self.all_questions = questions
             
-            # 현재 페이지의 박스들만 추출 (편집된 정보가 있으면 사용)
+            # 현재 페이지의 박스들만 추출
             self.boxes = []
             if page_num in self.edited_boxes:
                 # 편집된 박스 정보가 있으면 사용

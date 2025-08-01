@@ -6,6 +6,8 @@ import os
 import cv2
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
+from .model_utils import get_model_path
+from .logger import get_logger
 
 class QuestionDetector:
     """문제 감지 클래스"""
@@ -14,6 +16,7 @@ class QuestionDetector:
         self.model = None
         self.initialized = False
         self.model_path = None
+        self.logger = get_logger(__name__)
         
         # 초기화 시 모델 자동 로드
         if model_name:
@@ -58,51 +61,8 @@ class QuestionDetector:
             return False
     
     def _get_model_path(self, model_name: str) -> Path:
-        """모델 파일의 경로를 반환합니다. exe 파일과 개발 환경 모두 지원합니다."""
-        try:
-            # 1. 현재 작업 디렉토리 기준으로 models 폴더 찾기
-            current_dir = Path.cwd()
-            model_path = current_dir / "models" / model_name
-            
-            if model_path.exists():
-                return model_path
-            
-            # 2. 스크립트 파일 기준으로 상대 경로 찾기 (개발 환경)
-            script_dir = Path(__file__).parent.parent.parent
-            model_path = script_dir / "models" / model_name
-            
-            if model_path.exists():
-                return model_path
-            
-            # 3. exe 파일 기준으로 상대 경로 찾기
-            import sys
-            if getattr(sys, 'frozen', False):
-                # exe 파일로 실행된 경우
-                exe_dir = Path(sys.executable).parent
-                model_path = exe_dir / "models" / model_name
-                
-                if model_path.exists():
-                    return model_path
-                
-                # exe 파일과 같은 디렉토리에 models 폴더가 있는 경우
-                model_path = exe_dir / "models" / model_name
-                if model_path.exists():
-                    return model_path
-            
-            # 4. 환경 변수나 다른 방법으로 찾기
-            import os
-            for search_path in os.environ.get('MODEL_PATH', '').split(os.pathsep):
-                if search_path:
-                    model_path = Path(search_path) / model_name
-                    if model_path.exists():
-                        return model_path
-            
-            # 찾지 못한 경우 기본 경로 반환
-            return Path.cwd() / "models" / model_name
-            
-        except Exception as e:
-            # 오류 발생 시 기본 경로 반환
-            return Path.cwd() / "models" / model_name
+        """모델 파일의 경로를 반환합니다."""
+        return get_model_path(model_name)
     
     def _load_model(self, model_path: Optional[str] = None) -> None:
         """YOLO 모델을 로드합니다."""
@@ -111,13 +71,8 @@ class QuestionDetector:
             
             if model_path is None:
                 # 기본 모델 경로 설정 - models 폴더에서 첫 번째 .pt 파일 찾기
-                models_dir = Path.cwd() / "models"
-                
-                # exe 파일인 경우 exe 디렉토리에서 찾기
-                import sys
-                if getattr(sys, 'frozen', False):
-                    exe_dir = Path(sys.executable).parent
-                    models_dir = exe_dir / "models"
+                from .model_utils import get_model_directory
+                models_dir = get_model_directory()
                 
                 if models_dir.exists():
                     pt_files = list(models_dir.glob("*.pt"))
@@ -241,7 +196,7 @@ class QuestionDetector:
                     boxes = result.boxes
                     if boxes is not None:
                         for j, box in enumerate(boxes):
-                            # 바운딩 박스 좌표 (정규화된 좌표)
+                            # 바운딩 박스 좌표
                             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                             conf = float(box.conf[0].cpu().numpy())
                             
@@ -342,4 +297,4 @@ class QuestionDetector:
             
         except Exception as e:
             # 정리 작업 중 오류가 발생해도 무시
-            pass 
+            self.logger.warning(f"QuestionDetector 정리 중 오류 발생: {e}") 
