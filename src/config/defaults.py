@@ -3,17 +3,17 @@
 """
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class DefaultSettings:
     """기본 설정값들을 중앙에서 관리"""
-    
+
     @staticmethod
     def get_project_root() -> Path:
         """프로젝트 루트 경로를 일관되게 반환"""
         return Path(__file__).parent.parent.parent
-    
+
     @staticmethod
     def get_app_config_defaults() -> Dict[str, Any]:
         """애플리케이션 설정 기본값"""
@@ -26,9 +26,9 @@ class DefaultSettings:
             "log_level": "INFO",
             "log_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             "max_workers": 1,
-            "batch_size": 1
+            "batch_size": 1,
         }
-    
+
     @staticmethod
     def get_processing_defaults() -> Dict[str, Any]:
         """처리 설정 기본값"""
@@ -42,11 +42,11 @@ class DefaultSettings:
                 "개별 PDF": True,
                 "그룹 PDF": False,
                 "전체 문제집": False,
-                "셔플 문제집": False
+                "셔플 문제집": False,
             },
-            "shuffle_seed": None
+            "shuffle_seed": None,
         }
-    
+
     @staticmethod
     def get_ui_defaults() -> Dict[str, Any]:
         """UI 설정 기본값"""
@@ -56,15 +56,15 @@ class DefaultSettings:
             "min_size": "1000x600",
             "theme": "default",
             "colors": {
-                'primary': '#007bff',
-                'secondary': '#6c757d',
-                'success': '#28a745',
-                'warning': '#ffc107',
-                'danger': '#dc3545',
-                'info': '#17a2b8'
-            }
+                "primary": "#007bff",
+                "secondary": "#6c757d",
+                "success": "#28a745",
+                "warning": "#ffc107",
+                "danger": "#dc3545",
+                "info": "#17a2b8",
+            },
         }
-    
+
     @staticmethod
     def get_model_defaults() -> Dict[str, Any]:
         """모델 설정 기본값"""
@@ -72,5 +72,5 @@ class DefaultSettings:
             "default_model_path": None,
             "confidence_threshold": 0.3,
             "max_detections": 100,
-            "supported_extensions": ['.pt', '.pth', '.onnx', '.engine']
-        } 
+            "supported_extensions": [".pt", ".pth", ".onnx", ".engine"],
+        }
