@@ -82,9 +82,25 @@ class ExamSplitterApp:
             # 메인 루프 시작
             self.root.mainloop()
             
+        except ImportError as e:
+            error_msg = f"필수 라이브러리 로드 실패: {e}"
+            self.logger.error(error_msg)
+            print(error_msg)
+            self._show_error_dialog("라이브러리 오류", error_msg)
+            raise
+        except FileNotFoundError as e:
+            error_msg = f"필수 파일을 찾을 수 없습니다: {e}"
+            self.logger.error(error_msg)
+            print(error_msg)
+            self._show_error_dialog("파일 오류", error_msg)
+            raise
         except Exception as e:
-            self.logger.error(f"애플리케이션 실행 중 오류 발생: {e}", exc_info=True)
-            self._show_error_dialog("애플리케이션 시작 실패", str(e))
+            error_msg = f"애플리케이션 실행 중 오류 발생: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            self._show_error_dialog("애플리케이션 시작 실패", error_msg)
             raise
     
     def _setup_root_window(self) -> None:
@@ -185,22 +201,78 @@ class ExamSplitterApp:
     def _show_error_dialog(self, title: str, message: str) -> None:
         """오류 다이얼로그를 표시합니다."""
         try:
-            messagebox.showerror(title, message)
+            if self.root:
+                messagebox.showerror(title, message)
+            else:
+                # tkinter가 초기화되지 않은 경우 콘솔에 출력
+                print(f"오류 - {title}: {message}")
         except Exception as e:
-            pass
+            # tkinter 오류가 발생한 경우 콘솔에 출력
+            print(f"오류 - {title}: {message}")
+            print(f"다이얼로그 표시 실패: {e}")
+
+
+def check_dependencies():
+    """필수 의존성 라이브러리들을 검증합니다."""
+    missing_deps = []
+    print("의존성 검사 중....(최대 1분 걸립니다)")
+    try:
+        import ultralytics
+    except ImportError:
+        missing_deps.append("ultralytics")
+    
+    try:
+        import torch
+    except ImportError:
+        missing_deps.append("torch")
+    
+    try:
+        import cv2
+    except ImportError:
+        missing_deps.append("opencv-python")
+    
+    try:
+        import fitz
+    except ImportError:
+        missing_deps.append("PyMuPDF")
+    
+    if missing_deps:
+        print("다음 라이브러리들이 누락되었습니다:")
+        for dep in missing_deps:
+            print(f"  - {dep}")
+        print("\n다음 명령어로 설치해주세요:")
+        print("pip install -r requirements.txt")
+        return False
+    
+    return True
 
 
 def main():
     """메인 함수"""
     try:
+        # 의존성 검증
+        if not check_dependencies():
+            input("엔터를 눌러 종료하세요...")
+            return
+        
         # 애플리케이션 생성 및 실행
         app = ExamSplitterApp()
         app.run()
         
     except KeyboardInterrupt:
-        pass
+        print("프로그램이 사용자에 의해 중단되었습니다.")
+    except ImportError as e:
+        print(f"필수 라이브러리가 누락되었습니다: {e}")
+        print("requirements.txt의 모든 패키지를 설치해주세요.")
+        input("엔터를 눌러 종료하세요...")
+    except FileNotFoundError as e:
+        print(f"필수 파일을 찾을 수 없습니다: {e}")
+        input("엔터를 눌러 종료하세요...")
     except Exception as e:
-        pass
+        print(f"예상치 못한 오류가 발생했습니다: {e}")
+        import traceback
+        traceback.print_exc()
+        input("엔터를 눌러 종료하세요...")
 
 
 if __name__ == "__main__":

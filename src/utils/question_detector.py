@@ -4,10 +4,8 @@
 
 import os
 import cv2
-import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
-import tempfile
 
 class QuestionDetector:
     """문제 감지 클래스"""
@@ -210,16 +208,15 @@ class QuestionDetector:
             # 개별 문제 이미지 생성
             questions = self._create_individual_question_images(questions, output_dir)
             
-            # 결과 정렬 (페이지별, 왼쪽 위 -> 왼쪽 아래 -> 오른쪽 위 -> 오른쪽 아래 순서)
-            # 먼저 x좌표로 왼쪽/오른쪽 구분, 그 다음 y좌표로 위/아래 구분
             def sort_key(q):
-                x, y = q['box'][0], q['box'][1]  # 박스의 왼쪽 상단 좌표
-                # x < 0.5이면 왼쪽, x >= 0.5이면 오른쪽
-                # y < 0.5이면 위쪽, y >= 0.5이면 아래쪽
-                if x < 0.5:  # 왼쪽
-                    return (q['page'], 0, y)  # 왼쪽은 우선순위 0
-                else:  # 오른쪽
-                    return (q['page'], 1, y)  # 오른쪽은 우선순위 1
+                x1, y1, x2, y2 = q['box']
+                center_x = (x1 + x2) / 2
+                center_y = (y1 + y2) / 2
+                
+                if center_x < 0.5:
+                    return (q['page'], 0, center_y)
+                else:
+                    return (q['page'], 1, center_y)
             
             questions.sort(key=sort_key)
             

@@ -137,8 +137,14 @@ class MainWindow:
                     
                     # 설정 패널의 모델 정보 즉시 업데이트
                     self.settings_panel.update_model_info()
+                else:
+                    print("models 폴더에 .pt 파일이 없습니다.")
+            else:
+                print("models 폴더를 찾을 수 없습니다.")
         except Exception as e:
-            pass
+            print(f"모델 초기화 중 오류 발생: {e}")
+            import traceback
+            traceback.print_exc()
     
     def setup_menu(self):
         menubar = tk.Menu(self.root)
