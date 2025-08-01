@@ -29,6 +29,7 @@ class ImageCanvas(ttk.Frame):
         self.drag_start = None
         self.resize_mode = None
         self.resize_handle_size = 8
+        self.edited_boxes = {}  # 페이지별 편집된 박스 정보 저장
         
         self.setup_ui()
         self.bind_events()
@@ -91,11 +92,16 @@ class ImageCanvas(ttk.Frame):
             # 전체 문제 목록 저장 (항상 업데이트)
             self.all_questions = questions
             
-            # 현재 페이지의 박스들만 추출
+            # 현재 페이지의 박스들만 추출 (편집된 정보가 있으면 사용)
             self.boxes = []
-            for q in self.all_questions:
-                if q['page'] == page_num:
-                    self.boxes.append(q['box'].copy())
+            if page_num in self.edited_boxes:
+                # 편집된 박스 정보가 있으면 사용
+                self.boxes = self.edited_boxes[page_num].copy()
+            else:
+                # 편집된 정보가 없으면 원본 정보 사용
+                for q in self.all_questions:
+                    if q['page'] == page_num:
+                        self.boxes.append(q['box'].copy())
             
             self.scale_factor = None
             self._last_canvas_size = None
@@ -212,16 +218,16 @@ class ImageCanvas(ttk.Frame):
         self.selected_box = None
         self.resize_mode = None
         
-        # 핸들 클릭을 먼저 확인 (박스보다 우선순위)
+        # 핸들 클릭을 먼저 확인
         for item in clicked_items:
             tags = self.canvas.gettags(item)
             for tag in tags:
                 if tag.startswith("handle_"):
                     parts = tag.split("_")
-                    if len(parts) >= 4:  # handle_boxIndex_resize_mode
+                    if len(parts) >= 4:
                         box_index = int(parts[1])
                         self.selected_box = box_index
-                        self.resize_mode = f"resize_{parts[3]}"  # resize_nw, resize_ne, resize_sw, resize_se
+                        self.resize_mode = f"resize_{parts[3]}"
                         self.drag_start = (canvas_x, canvas_y)
                         return
         
@@ -259,22 +265,49 @@ class ImageCanvas(ttk.Frame):
         
         # 박스 좌표 업데이트
         if self.resize_mode == "move":
-            self.boxes[self.selected_box][0] += norm_dx
-            self.boxes[self.selected_box][1] += norm_dy
-            self.boxes[self.selected_box][2] += norm_dx
-            self.boxes[self.selected_box][3] += norm_dy
+            new_x1 = self.boxes[self.selected_box][0] + norm_dx
+            new_y1 = self.boxes[self.selected_box][1] + norm_dy
+            new_x2 = self.boxes[self.selected_box][2] + norm_dx
+            new_y2 = self.boxes[self.selected_box][3] + norm_dy
+            
+            # 경계 검증
+            if new_x1 >= 0 and new_x2 <= 1 and new_y1 >= 0 and new_y2 <= 1 and new_x1 < new_x2 and new_y1 < new_y2:
+                self.boxes[self.selected_box][0] = new_x1
+                self.boxes[self.selected_box][1] = new_y1
+                self.boxes[self.selected_box][2] = new_x2
+                self.boxes[self.selected_box][3] = new_y2
         elif self.resize_mode == "resize_nw":
-            self.boxes[self.selected_box][0] += norm_dx
-            self.boxes[self.selected_box][1] += norm_dy
+            new_x1 = self.boxes[self.selected_box][0] + norm_dx
+            new_y1 = self.boxes[self.selected_box][1] + norm_dy
+            
+            # 경계 검증
+            if new_x1 >= 0 and new_x1 < self.boxes[self.selected_box][2] and new_y1 >= 0 and new_y1 < self.boxes[self.selected_box][3]:
+                self.boxes[self.selected_box][0] = new_x1
+                self.boxes[self.selected_box][1] = new_y1
         elif self.resize_mode == "resize_ne":
-            self.boxes[self.selected_box][2] += norm_dx
-            self.boxes[self.selected_box][1] += norm_dy
+            new_x2 = self.boxes[self.selected_box][2] + norm_dx
+            new_y1 = self.boxes[self.selected_box][1] + norm_dy
+            
+            # 경계 검증
+            if new_x2 <= 1 and new_x2 > self.boxes[self.selected_box][0] and new_y1 >= 0 and new_y1 < self.boxes[self.selected_box][3]:
+                self.boxes[self.selected_box][2] = new_x2
+                self.boxes[self.selected_box][1] = new_y1
         elif self.resize_mode == "resize_sw":
-            self.boxes[self.selected_box][0] += norm_dx
-            self.boxes[self.selected_box][3] += norm_dy
+            new_x1 = self.boxes[self.selected_box][0] + norm_dx
+            new_y2 = self.boxes[self.selected_box][3] + norm_dy
+            
+            # 경계 검증
+            if new_x1 >= 0 and new_x1 < self.boxes[self.selected_box][2] and new_y2 <= 1 and new_y2 > self.boxes[self.selected_box][1]:
+                self.boxes[self.selected_box][0] = new_x1
+                self.boxes[self.selected_box][3] = new_y2
         elif self.resize_mode == "resize_se":
-            self.boxes[self.selected_box][2] += norm_dx
-            self.boxes[self.selected_box][3] += norm_dy
+            new_x2 = self.boxes[self.selected_box][2] + norm_dx
+            new_y2 = self.boxes[self.selected_box][3] + norm_dy
+            
+            # 경계 검증
+            if new_x2 <= 1 and new_x2 > self.boxes[self.selected_box][0] and new_y2 <= 1 and new_y2 > self.boxes[self.selected_box][1]:
+                self.boxes[self.selected_box][2] = new_x2
+                self.boxes[self.selected_box][3] = new_y2
         
         self.drag_start = (canvas_x, canvas_y)
         self.update_boxes_display()
@@ -312,11 +345,16 @@ class ImageCanvas(ttk.Frame):
                     box_index = int(tag.split("_")[1])
                     self.selected_box = box_index
                     self.resize_mode = "move"
+                    # 선택된 박스의 리사이즈 핸들 표시
+                    self.update_boxes_display()
                     return
     
     def on_mouse_up(self, event):
-        if self.selected_box is not None and self.callback:
-            self.callback()
+        if self.selected_box is not None:
+            # 현재 페이지의 편집된 박스 정보 저장
+            self.edited_boxes[self.current_page] = [box.copy() for box in self.boxes]
+            if self.callback:
+                self.callback()
         self.drag_start = None
         self.resize_mode = None
     
@@ -364,23 +402,24 @@ class ImageCanvas(ttk.Frame):
     
     def get_modified_questions(self):
         """편집된 문제 목록을 반환합니다."""
-        # 현재 페이지 박스들을 전체 문제 목록에 업데이트
+        # 원본 순서를 유지하면서 편집된 박스 정보만 업데이트
         updated_questions = []
         
-        # 현재 페이지의 문제들만 필터링
-        current_page_questions = [q for q in self.all_questions if q['page'] == self.current_page]
-        
-        # 현재 페이지 문제들을 boxes 순서대로 업데이트
-        for i, box in enumerate(self.boxes):
-            if i < len(current_page_questions):
-                updated_q = current_page_questions[i].copy()
-                updated_q['box'] = box.copy()
-                updated_questions.append(updated_q)
-        
-        # 다른 페이지 문제들은 그대로 유지
         for q in self.all_questions:
-            if q['page'] != self.current_page:
-                updated_questions.append(q)
+            page_num = q['page']
+            updated_q = q.copy()
+            
+            # 편집된 박스 정보가 있는지 확인
+            if page_num in self.edited_boxes:
+                # 현재 페이지의 문제들 중에서 해당 문제의 인덱스 찾기
+                current_page_questions = [q2 for q2 in self.all_questions if q2['page'] == page_num]
+                question_index = current_page_questions.index(q)
+                
+                # 편집된 박스 정보가 있으면 사용
+                if question_index < len(self.edited_boxes[page_num]):
+                    updated_q['box'] = self.edited_boxes[page_num][question_index].copy()
+            
+            updated_questions.append(updated_q)
         
         return updated_questions
     
@@ -414,6 +453,7 @@ class ImageCanvas(ttk.Frame):
             self.scale_factor = None
             self.original_size = (0, 0)
             self._last_canvas_size = None
+            self.edited_boxes = {}
             
         except Exception as e:
             # 정리 작업 중 오류가 발생해도 무시

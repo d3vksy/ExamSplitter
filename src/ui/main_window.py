@@ -202,12 +202,10 @@ class MainWindow:
     
     def on_canvas_modified(self):
         """캔버스에서 박스가 편집되었을 때 호출됩니다."""
-        # 편집된 문제 목록을 가져와서 업데이트
         if hasattr(self, 'image_canvas') and self.image_canvas:
             modified_questions = self.image_canvas.get_modified_questions()
             if modified_questions:
                 self.questions = modified_questions
-                pass
     
     def detect_questions(self):
         if not self.current_pdf_path:
