@@ -4,10 +4,8 @@
 
 import os
 import cv2
-import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
-import tempfile
 
 class QuestionDetector:
     """문제 감지 클래스"""
