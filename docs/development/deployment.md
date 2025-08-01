@@ -108,21 +108,31 @@ GitHub Actions UI에서 수동으로 배포할 수 있습니다:
 ```python
 # 주요 PyInstaller 옵션
 cmd = [
-    "pyinstaller",
-    ENTRY_FILE,
-    "--onedir",           # 단일 폴더로 빌드
-    "--noconsole",        # 콘솔 창 숨김
-    "--clean",            # 캐시 정리
-    f"--name={PROJECT_NAME}",
-    "--hidden-import=ultralytics",  # YOLOv8
-    "--hidden-import=torch",        # PyTorch
-    "--hidden-import=cv2",          # OpenCV
-    "--hidden-import=fitz",         # PyMuPDF
-    "--hidden-import=pymupdf",      # PyMuPDF (별칭)
-    f'--add-data="{banner_abs};."', # 배너 이미지 포함
-    "--distpath=dist",              # 출력 디렉토리
-    "--workpath=build",             # 작업 디렉토리
-    "--log-level=INFO"              # 로그 레벨
+        "pyinstaller",
+        ENTRY_FILE,
+        "--onedir",
+        # "--noconsole",  # 콘솔 창 표시하여 오류 확인 가능
+        "--clean",
+        f"--name={PROJECT_NAME}",
+        "--hidden-import=ultralytics",
+        "--hidden-import=torch",
+        "--hidden-import=torchvision",
+        "--hidden-import=onnxruntime",
+        "--hidden-import=cv2",
+        "--hidden-import=numpy",
+        "--hidden-import=PIL",
+        "--hidden-import=pandas",
+        "--hidden-import=reportlab",
+        "--hidden-import=tkinter",
+        "--hidden-import=fitz",
+        "--hidden-import=pymupdf",
+        "--collect-all=ultralytics",
+        "--collect-all=torch",
+        f'--add-data="{banner_abs};."',
+        "--distpath=dist",
+        "--workpath=build",
+        "--specpath=build",
+        "--log-level=INFO"
 ]
 ```
 
